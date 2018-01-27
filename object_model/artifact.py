@@ -321,7 +321,8 @@ class Artifact:
 
         # temporary fix for backward compatibility
         self.xp_state.versioningDirectory = 'jarvis.d'
-
+        
+        #parallizable until committing to git
         util.activate(self)
         userDefFiles = set(os.listdir()) - self.xp_state.ghostFiles
         try:
@@ -342,6 +343,8 @@ class Artifact:
             self.xp_state.literals = []
             self.xp_state.ghostFiles = set([])
             raise e
+
+        #file management
         intermediateFiles = set(self.loclist) - userDefFiles
         for file in intermediateFiles:
             os.remove(file)
@@ -349,6 +352,7 @@ class Artifact:
         for file in (userDefFiles & (set(self.loclist) | set(self.scriptNames))):
             copyfile(file, self.xp_state.versioningDirectory + '/' + file)
             commitables.append(file)
+        #committing everything to git
         os.chdir(self.xp_state.versioningDirectory)
         repo = git.Repo(os.getcwd())
         repo.index.add(commitables)
