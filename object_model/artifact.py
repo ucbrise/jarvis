@@ -34,13 +34,13 @@ class Artifact:
 
     def __commit__(self):
 
-        gc = self.xp_state.gc
+        gc = self.xp_state.gc #ground client
         dir_name = self.xp_state.versioningDirectory
         loclist = self.loclist
         scriptNames = self.scriptNames
         tag = {
-            'Artifacts': [i for i in loclist],
-            'Actions': [i for i in scriptNames]
+            'Artifacts': [i for i in loclist], #maps "artifacts" to paths to artifacts
+            'Actions': [i for i in scriptNames] #similar but with "actions"
         }
 
         for literal in self.xp_state.literals:
@@ -48,16 +48,17 @@ class Artifact:
                 try:
                     value = str(util.unpickle(literal.loc))
                     if len(value) <= 250:
-                        tag[literal.name] = value
+                        tag[literal.name] = value #maps literal names to literal values
                 except:
                     pass
 
         if not os.path.exists(dir_name):
             nodeid = gc.createNode('Run')
-            gc.createNodeVersion(nodeid, tag)
+            gc.createNodeVersion(nodeid, tag) #ground initialization
 
-            os.makedirs(dir_name)
-            os.makedirs(dir_name + '/1')
+            os.makedirs(dir_name) #create directory
+            #FIXME: need to create experiment name
+            os.makedirs(dir_name + '/1') #creating subdirectory for experiment numbers
             # Move new files to the artifacts repo
             for loc in loclist:
                 copyfile(loc, dir_name + "/1/" + loc)
@@ -65,10 +66,10 @@ class Artifact:
                 copyfile(script, dir_name + "/1/" + script)
             os.chdir(dir_name + '/1')
 
-            gc.commit()
-            os.chdir('../')
+            gc.commit() #move everything into the first subdirectory and commits it
+            os.chdir('../') #operating in jarvis.d
 
-            repo = git.Repo.init(os.getcwd())
+            repo = git.Repo.init(os.getcwd()) #initialize git repo
             repo.index.add(['1',])
 
             repo.index.commit("initial commit")
@@ -80,27 +81,30 @@ class Artifact:
                         f.write(obj.path + " " + commithash + "\n")
             repo.index.add(['.jarvis'])
             repo.index.commit('.jarvis commit')
-            os.chdir('../')
+            os.chdir('../') #creates .jarvis if not one, otherwise overwrites and commits.
         else:
 
-            listdir = [x for x in filter(util.isNumber, os.listdir(dir_name))]
+            listdir = [x for x in filter(util.isNumber, os.listdir(dir_name))] #makes not of how many numbers
 
+            #FIXME: rerrunning the experiment should overrite files not create all new files.
             nthDir =  str(len(listdir) + 1)
             os.makedirs(dir_name + "/" + nthDir)
             for loc in loclist:
                 copyfile(loc, dir_name + "/" + nthDir + "/" + loc)
             for script in scriptNames:
                 copyfile(script, dir_name + "/" + nthDir + "/" + script)
-            os.chdir(dir_name + "/" + nthDir)
+            os.chdir(dir_name + "/" + nthDir) #adding an extra directory
 
             gc.load()
 
             run_node = gc.getNode('Run')
+            #FIXME: below two lines may not be necessary - could replace w/ parents = None only?
             parents = []
 
             if not parents:
                 parents = None
-            gc.createNodeVersion(run_node.nodeId, tag, parents)
+            gc.createNodeVersion(run_node.nodeId, tag, parents) #question..the function returns dictionary d, but the return value is not used or saved?
+            #ask rolando about this. There are two createNodeVersion
 
             gc.commit()
 
@@ -330,7 +334,6 @@ class Artifact:
         # FIXME: self.xp_state.versioningDirectory = os.path.expanduser('~') + '/' + 'jarvis.d'
         self.xp_state.versioningDirectory = 'jarvis.d'
         
-        #parallizable until committing to git
         util.activate(self)
         userDefFiles = set(os.listdir()) - self.xp_state.ghostFiles
         try:
