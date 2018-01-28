@@ -202,6 +202,7 @@ class Artifact:
             reporter(timesteps_total=1)
             os.chdir(original_dir)
 
+        #Tune
         config = {}
         numTrials = 1
         literals = []
@@ -209,10 +210,13 @@ class Artifact:
         for kee in self.xp_state.literalNameToObj:
             if kee in literalsAttached:
                 if self.xp_state.literalNameToObj[kee].__oneByOne__:
+
+                    #Tune
                     config[kee] = grid_search(self.xp_state.literalNameToObj[kee].v)
                     numTrials *= len(self.xp_state.literalNameToObj[kee].v)
                     literals.append(self.xp_state.literalNameToObj[kee].v)
                 else:
+                    #Tune
                     config[kee] = self.xp_state.literalNameToObj[kee].v
                     if util.isIterable(self.xp_state.literalNameToObj[kee].v):
                         if type(self.xp_state.literalNameToObj[kee].v) == tuple:
@@ -224,7 +228,9 @@ class Artifact:
                 literalNames.append(kee)
 
         literals = list(itertools.product(*literals))
+        #Tune
         config['6zax7937'] = literals
+        #Tune
         config['8ilk9274'] = literalNames
 
         for i in range(numTrials):
@@ -240,6 +246,7 @@ class Artifact:
 
         self.xp_state.ray['literalNames'] = literalNames
 
+        #Tune
         run_experiments({
             experimentName : {
                 'run': 'exportedExec',
@@ -320,6 +327,7 @@ class Artifact:
     def pull(self):
 
         # temporary fix for backward compatibility
+        # FIXME: self.xp_state.versioningDirectory = os.path.expanduser('~') + '/' + 'jarvis.d'
         self.xp_state.versioningDirectory = 'jarvis.d'
         
         #parallizable until committing to git
