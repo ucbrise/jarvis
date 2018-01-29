@@ -170,7 +170,7 @@ class Artifact:
         self.scriptNames = []
 
         literalsAttached = set([])
-        lambdas = []
+        lambdas = [] #Encompasses actions that need to be done 
         if not util.isOrphan(self):
             self.parent.__serialize__(lambdas, self.loclist, self.scriptNames)
 
@@ -187,6 +187,7 @@ class Artifact:
         original_dir = os.getcwd()
 
         experimentName = self.xp_state.jarvisFile.split('.')[0]
+        #FIXME: May not be necessary in Pure Ray
         def exportedExec(config, reporter):
             tee = tuple([])
             for litName in config['8ilk9274']:
@@ -200,6 +201,7 @@ class Artifact:
             os.chdir(tmpexperiment + '/' + str(i))
             with open('.' + experimentName + '.jarvis', 'w') as fp:
                 json.dump(config, fp)
+            #This is necessary for the Pure Ray implementation. 
             for f, names in lambdas:
                 literals = list(map(lambda x: config[x], names))
                 f(literals)
@@ -251,6 +253,7 @@ class Artifact:
         self.xp_state.ray['literalNames'] = literalNames
 
         #Tune
+        #FIXME: run_experiments is equivalent of calling remote fn multiple times 
         run_experiments({
             experimentName : {
                 'run': 'exportedExec',
