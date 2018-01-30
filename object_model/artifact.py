@@ -164,7 +164,7 @@ class Artifact:
         self.xp_state.visited = []
 
         if not util.isOrphan(self):
-            self.loclist = list(map(lambda x: x.getLocation(), self.parent.out_artifacts))
+            self.loclist = list(map(lambda x: x.getLocation(), self.parent.out_artifacts)) #get location of all out_artifacts
         else:
             self.loclist = [self.getLocation(),]
         self.scriptNames = []
@@ -172,7 +172,7 @@ class Artifact:
         literalsAttached = set([])
         lambdas = [] #Encompasses actions that need to be done 
         if not util.isOrphan(self):
-            self.parent.__serialize__(lambdas, self.loclist, self.scriptNames)
+            self.parent.__serialize__(lambdas, self.loclist, self.scriptNames) #?
 
         self.loclist = list(set(self.loclist))
         self.scriptNames = list(set(self.scriptNames))
