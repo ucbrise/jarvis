@@ -109,8 +109,9 @@ def parallelPull(self, manifest={}):
 			record_small = {}
 
 			for literalName in literalNames:
-				record_full[literalName] = config[literalName]
-				record_small[literalName] = config[literalName]
+				#References the new config file ptr so is valid 
+				record_full[literalName] = config[literalName] 
+				record_small[literalName] = config[literalName] 
 
 			for artifactLabel in manifest:
 				record_full[artifactLabel] = util.loadArtifact(manifest[artifactLabel].loc)
