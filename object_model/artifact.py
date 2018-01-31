@@ -149,193 +149,192 @@ class Artifact:
         self.loclist.sort()
         self.scriptNames.sort()
 
-    # def parallelPull(self, manifest={}):
-    #
-    #     self.xp_state.versioningDirectory = os.path.expanduser('~') + '/' + 'jarvis.d'
-    #
-    #     # Runs one experiment per pull
-    #     # Each experiment has many trials
-    #
-    #     tmpexperiment = self.xp_state.tmpexperiment
-    #     if os.path.exists(tmpexperiment):
-    #         rmtree(tmpexperiment)
-    #         os.mkdir(tmpexperiment)
-    #     else:
-    #         os.mkdir(tmpexperiment)
-    #
-    #     self.xp_state.visited = []
-    #
-    #     if not util.isOrphan(self):
-    #         self.loclist = list(map(lambda x: x.getLocation(), self.parent.out_artifacts)) #get location of all out_artifacts
-    #     else:
-    #         self.loclist = [self.getLocation(),]
-    #     self.scriptNames = []
-    #
-    #     literalsAttached = set([])
-    #     lambdas = [] #Encompasses actions that need to be done
-    #     if not util.isOrphan(self):
-    #         self.parent.__serialize__(lambdas, self.loclist, self.scriptNames) #?
-    #
-    #     self.loclist = list(set(self.loclist))
-    #     self.scriptNames = list(set(self.scriptNames))
-    #
-    #     # Need to sort to compare
-    #     self.loclist.sort()
-    #     self.scriptNames.sort()
-    #
-    #     for _, names in lambdas:
-    #         literalsAttached |= set(names)
-    #
-    #     original_dir = os.getcwd()
-    #
-    #     experimentName = self.xp_state.jarvisFile.split('.')[0]
-    #     #FIXME: May not be necessary in Pure Ray
-    #     def exportedExec(config, reporter):
-    #         tee = tuple([])
-    #         for litName in config['8ilk9274']:
-    #             tee += (config[litName], )
-    #         i = -1
-    #         for j, v in enumerate(config['6zax7937']):
-    #             if v == tee:
-    #                 i = j
-    #                 break
-    #         assert i >= 0
-    #         os.chdir(tmpexperiment + '/' + str(i))
-    #         with open('.' + experimentName + '.jarvis', 'w') as fp:
-    #             json.dump(config, fp)
-    #         #This is necessary for the Pure Ray implementation.
-    #         for f, names in lambdas:
-    #             literals = list(map(lambda x: config[x], names))
-    #             f(literals)
-    #         reporter(timesteps_total=1)
-    #         os.chdir(original_dir)
-    #
-    #     #Tune
-    #     config = {}
-    #     numTrials = 1
-    #     literals = []
-    #     literalNames = []
-    #     for kee in self.xp_state.literalNameToObj:
-    #         if kee in literalsAttached:
-    #             if self.xp_state.literalNameToObj[kee].__oneByOne__:
-    #
-    #                 #Tune
-    #                 config[kee] = grid_search(self.xp_state.literalNameToObj[kee].v)
-    #                 numTrials *= len(self.xp_state.literalNameToObj[kee].v)
-    #                 literals.append(self.xp_state.literalNameToObj[kee].v)
-    #             else:
-    #                 #Tune
-    #                 config[kee] = self.xp_state.literalNameToObj[kee].v
-    #                 if util.isIterable(self.xp_state.literalNameToObj[kee].v):
-    #                     if type(self.xp_state.literalNameToObj[kee].v) == tuple:
-    #                         literals.append((self.xp_state.literalNameToObj[kee].v, ))
-    #                     else:
-    #                         literals.append([self.xp_state.literalNameToObj[kee].v, ])
-    #                 else:
-    #                     literals.append([self.xp_state.literalNameToObj[kee].v, ])
-    #             literalNames.append(kee)
-    #
-    #     literals = list(itertools.product(*literals))
-    #     #Tune
-    #     config['6zax7937'] = literals
-    #     #Tune
-    #     config['8ilk9274'] = literalNames
-    #
-    #     for i in range(numTrials):
-    #         dst = tmpexperiment + '/' + str(i)
-    #         copytree(os.getcwd(), dst, True)
-    #
-    #
-    #     ts = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    #
-    #     register_trainable('exportedExec', exportedExec)
-    #
-    #
-    #
-    #     self.xp_state.ray['literalNames'] = literalNames
-    #
-    #     #Tune
-    #     #FIXME: run_experiments is equivalent of calling remote fn multiple times
-    #     run_experiments({
-    #         experimentName : {
-    #             'run': 'exportedExec',
-    #             'resources': {'cpu': 1, 'gpu': 0},
-    #             'config': config
-    #         }
-    #     })
-    #
-    #     if not os.path.isdir(self.xp_state.versioningDirectory):
-    #         os.mkdir(self.xp_state.versioningDirectory)
-    #
-    #     moveBackFlag = False
-    #
-    #     if os.path.exists(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0]):
-    #         move(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0] + '/.git', '/tmp/')
-    #         rmtree(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0])
-    #         moveBackFlag = True
-    #
-    #     if manifest:
-    #
-    #         os.chdir(tmpexperiment)
-    #
-    #         dirs = [x for x in os.listdir() if util.isNumber(x)]
-    #         table_full = []
-    #         table_small = []
-    #
-    #         for trial in dirs:
-    #             os.chdir(trial)
-    #             with open('.' + experimentName + '.jarvis', 'r') as fp:
-    #                 config = json.load(fp)
-    #             record_full = {}
-    #             record_small = {}
-    #
-    #             for literalName in literalNames:
-    #                 record_full[literalName] = config[literalName]
-    #                 record_small[literalName] = config[literalName]
-    #             for artifactLabel in manifest:
-    #                 record_full[artifactLabel] = util.loadArtifact(manifest[artifactLabel].loc)
-    #                 if total_size(record_full[artifactLabel]) >= 1000:
-    #                     record_small[artifactLabel] = " . . . "
-    #                 else:
-    #                     record_small[artifactLabel] = record_full[artifactLabel]
-    #                 if util.isNumber(record_full[artifactLabel]):
-    #                     record_full[artifactLabel] = eval(record_full[artifactLabel])
-    #                 if util.isNumber(record_small[artifactLabel]):
-    #                     record_small[artifactLabel] = eval(record_small[artifactLabel])
-    #             record_small['__trialNum__'] = trial
-    #             record_full['__trialNum__'] = trial
-    #
-    #             table_full.append(record_full)
-    #             table_small.append(record_small)
-    #             os.chdir('../')
-    #
-    #         df = pd.DataFrame(table_small)
-    #         util.pickleTo(df, experimentName + '.pkl')
-    #
-    #         os.chdir(original_dir)
-
-        # copytree(tmpexperiment, self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0])
-        #
-        # os.chdir(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0])
-        # if moveBackFlag:
-        #     move('/tmp/.git', self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0])
-        #     repo = git.Repo(os.getcwd())
-        #     repo.git.add(A=True)
-        #     repo.index.commit('incremental commit')
-        # else:
-        #     repo = git.Repo.init(os.getcwd())
-        #     repo.git.add(A=True)
-        #     repo.index.commit('initial commit')
-        # os.chdir(original_dir)
-        #
-        # if manifest:
-        #
-        #     return pd.DataFrame(table_full)
-
-    #new version of parallelPull
     def parallelPull(self, manifest={}):
 
-        # TODO: Where to initialize Ray?
+        self.xp_state.versioningDirectory = os.path.expanduser('~') + '/' + 'jarvis.d'
+
+        # Runs one experiment per pull
+        # Each experiment has many trials
+
+        tmpexperiment = self.xp_state.tmpexperiment
+        if os.path.exists(tmpexperiment):
+            rmtree(tmpexperiment)
+            os.mkdir(tmpexperiment)
+        else:
+            os.mkdir(tmpexperiment)
+
+        self.xp_state.visited = []
+
+        if not util.isOrphan(self):
+            self.loclist = list(map(lambda x: x.getLocation(), self.parent.out_artifacts)) #get location of all out_artifacts
+        else:
+            self.loclist = [self.getLocation(),]
+        self.scriptNames = []
+
+        literalsAttached = set([])
+        lambdas = [] #Encompasses actions that need to be done
+        if not util.isOrphan(self):
+            self.parent.__serialize__(lambdas, self.loclist, self.scriptNames) #?
+
+        self.loclist = list(set(self.loclist))
+        self.scriptNames = list(set(self.scriptNames))
+
+        # Need to sort to compare
+        self.loclist.sort()
+        self.scriptNames.sort()
+
+        for _, names in lambdas:
+            literalsAttached |= set(names)
+
+        original_dir = os.getcwd()
+
+        experimentName = self.xp_state.jarvisFile.split('.')[0]
+        #FIXME: May not be necessary in Pure Ray
+        def exportedExec(config, reporter):
+            tee = tuple([])
+            for litName in config['8ilk9274']:
+                tee += (config[litName], )
+            i = -1
+            for j, v in enumerate(config['6zax7937']):
+                if v == tee:
+                    i = j
+                    break
+            assert i >= 0
+            os.chdir(tmpexperiment + '/' + str(i))
+            with open('.' + experimentName + '.jarvis', 'w') as fp:
+                json.dump(config, fp)
+            #This is necessary for the Pure Ray implementation.
+            for f, names in lambdas:
+                literals = list(map(lambda x: config[x], names))
+                print(literals)
+                f(literals)
+            reporter(timesteps_total=1)
+            os.chdir(original_dir)
+
+        #Tune
+        config = {}
+        numTrials = 1
+        literals = []
+        literalNames = []
+        for kee in self.xp_state.literalNameToObj:
+            if kee in literalsAttached:
+                if self.xp_state.literalNameToObj[kee].__oneByOne__:
+
+                    #Tune
+                    config[kee] = grid_search(self.xp_state.literalNameToObj[kee].v)
+                    numTrials *= len(self.xp_state.literalNameToObj[kee].v)
+                    literals.append(self.xp_state.literalNameToObj[kee].v)
+                else:
+                    #Tune
+                    config[kee] = self.xp_state.literalNameToObj[kee].v
+                    if util.isIterable(self.xp_state.literalNameToObj[kee].v):
+                        if type(self.xp_state.literalNameToObj[kee].v) == tuple:
+                            literals.append((self.xp_state.literalNameToObj[kee].v, ))
+                        else:
+                            literals.append([self.xp_state.literalNameToObj[kee].v, ])
+                    else:
+                        literals.append([self.xp_state.literalNameToObj[kee].v, ])
+                literalNames.append(kee)
+
+        literals = list(itertools.product(*literals))
+        #Tune
+        config['6zax7937'] = literals
+        #Tune
+        config['8ilk9274'] = literalNames
+
+        for i in range(numTrials):
+            dst = tmpexperiment + '/' + str(i)
+            copytree(os.getcwd(), dst, True)
+
+
+        ts = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+
+        register_trainable('exportedExec', exportedExec)
+
+
+
+        self.xp_state.ray['literalNames'] = literalNames
+
+        #Tune
+        #FIXME: run_experiments is equivalent of calling remote fn multiple times
+        run_experiments({
+            experimentName : {
+                'run': 'exportedExec',
+                'resources': {'cpu': 1, 'gpu': 0},
+                'config': config
+            }
+        })
+
+        if not os.path.isdir(self.xp_state.versioningDirectory):
+            os.mkdir(self.xp_state.versioningDirectory)
+
+        moveBackFlag = False
+
+        if os.path.exists(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0]):
+            move(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0] + '/.git', '/tmp/')
+            rmtree(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0])
+            moveBackFlag = True
+
+        if manifest:
+
+            os.chdir(tmpexperiment)
+
+            dirs = [x for x in os.listdir() if util.isNumber(x)]
+            table_full = []
+            table_small = []
+
+            for trial in dirs:
+                os.chdir(trial)
+                with open('.' + experimentName + '.jarvis', 'r') as fp:
+                    config = json.load(fp)
+                record_full = {}
+                record_small = {}
+
+                for literalName in literalNames:
+                    record_full[literalName] = config[literalName]
+                    record_small[literalName] = config[literalName]
+                for artifactLabel in manifest:
+                    record_full[artifactLabel] = util.loadArtifact(manifest[artifactLabel].loc)
+                    if total_size(record_full[artifactLabel]) >= 1000:
+                        record_small[artifactLabel] = " . . . "
+                    else:
+                        record_small[artifactLabel] = record_full[artifactLabel]
+                    if util.isNumber(record_full[artifactLabel]):
+                        record_full[artifactLabel] = eval(record_full[artifactLabel])
+                    if util.isNumber(record_small[artifactLabel]):
+                        record_small[artifactLabel] = eval(record_small[artifactLabel])
+                record_small['__trialNum__'] = trial
+                record_full['__trialNum__'] = trial
+
+                table_full.append(record_full)
+                table_small.append(record_small)
+                os.chdir('../')
+
+            df = pd.DataFrame(table_small)
+            util.pickleTo(df, experimentName + '.pkl')
+
+            os.chdir(original_dir)
+
+        copytree(tmpexperiment, self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0])
+
+        os.chdir(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0])
+        if moveBackFlag:
+            move('/tmp/.git', self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0])
+            repo = git.Repo(os.getcwd())
+            repo.git.add(A=True)
+            repo.index.commit('incremental commit')
+        else:
+            repo = git.Repo.init(os.getcwd())
+            repo.git.add(A=True)
+            repo.index.commit('initial commit')
+        os.chdir(original_dir)
+
+        if manifest:
+
+            return pd.DataFrame(table_full)
+
+    #new version of parallelPull
+    def parallelPul(self, manifest={}):
 
         self.xp_state.versioningDirectory = os.path.expanduser('~') + '/' + 'jarvis.d'
 
@@ -359,10 +358,10 @@ class Artifact:
             self.parent.__serialize__(lambdas, self.loclist, self.scriptNames)
 
         self.loclist = list(set(self.loclist))
-        self.scriptNames = list(set(self.scriptNames))  # FIXME: Needed?
+        self.scriptNames = list(set(self.scriptNames)) # needed
 
         self.loclist.sort()
-        self.scriptNames.sort()  # FIXME: Needed?
+        self.scriptNames.sort()  # needed
 
         for _, names in lambdas:
             literalsAttached |= set(names)
@@ -373,7 +372,6 @@ class Artifact:
         numTrials = 1
         literals = []
         literalNames = []
-
 
         for kee in self.xp_state.literalNameToObj:
             if kee in literalsAttached:
@@ -393,7 +391,7 @@ class Artifact:
             dst = tmpexperiment + '/' + str(i)
             copytree(os.getcwd(), dst, True)  # TODO: Check if needed
 
-        ts = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')  # TODO: Check if needed?
+        # ts = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')  #probably not needed
         self.xp_state.ray['literalNames'] = literalNames  # TODO: Check what the implication of this is
 
         # TODO: Run Functions in Parallel
@@ -408,15 +406,25 @@ class Artifact:
         # perhaps ray.init() here? Also should ray.init(redirect_output=True) be used?
         ray.init()
         remaining_ids = []
+        print(numTrials)
+        size = len(lambdas[0])
+        print(lambdas)
+        print(size)
+        input()
+
         for i in range(numTrials):
+            print(i)
             # FIXME: Add check if number of combinations of literals == numTrials??
             dir_path = tmpexperiment + '/' + str(i)
-            literals = list(map(lambda x: self.xp_state.literalNameToObj[x].v, lambdas[i][1]))
-            f = lambdas[i][0]
+            literals = list(map(lambda x: self.xp_state.literalNameToObj[x].v, lambdas[0][1]))
+            f = lambdas[0][0]
 
+            print(literals)
+            input()
             remaining_ids.append(helperChangeDir.remote(dir_path, f, literals))
 
-        _, _ = ray.wait(remaining_ids, num_returns=numTrials)
+        # _, _ = ray.wait(remaining_ids, num_returns=numTrials)
+        _ = ray.get(remaining_ids) #I tried using get to see if there's a difference
 
         # Results directory initialization
 
