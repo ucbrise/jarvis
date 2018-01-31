@@ -293,6 +293,15 @@ class Artifact:
     #                 record_full[literalName] = config[literalName]
     #                 record_small[literalName] = config[literalName]
     #             for artifactLabel in manifest:
+    #                 print(os.listdir())
+    #                 print()
+    #                 print(artifactLabel)
+    #                 print()
+    #                 print(manifest[artifactLabel])
+    #                 print()
+    #                 print(manifest[artifactLabel].loc)
+    #                 print("pausing")
+    #                 input()
     #                 record_full[artifactLabel] = util.loadArtifact(manifest[artifactLabel].loc)
     #                 if total_size(record_full[artifactLabel]) >= 1000:
     #                     record_small[artifactLabel] = " . . . "
@@ -371,9 +380,11 @@ class Artifact:
         numTrials = 1
         literals = []
         literalNames = []
+        config = {}
 
         for kee in self.xp_state.literalNameToObj:
             if kee in literalsAttached:
+                config[kee] = self.xp_state.literalNameToObj[kee].v
                 if self.xp_state.literalNameToObj[kee].__oneByOne__:
                     numTrials *= len(self.xp_state.literalNameToObj[kee].v)
                     literals.append(self.xp_state.literalNameToObj[kee].v)
@@ -393,17 +404,21 @@ class Artifact:
         # ts = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')  #probably not needed
         self.xp_state.ray['literalNames'] = literalNames  # TODO: Check what the implication of this is
 
+        config['6zax7937'] = literals
+        config['8ilk9274'] = literalNames
         # TODO: Run Functions in Parallel
 
         # May need to move this outside of the function?
         # this should be ok
         @ray.remote
-        def helperChangeDir(dir_path, f, literals):
+        def helperChangeDir(dir_path, f, literals, config):
             os.chdir(dir_path)
+            with open('.' + experimentName + '.jarvis', 'w') as fp:
+                json.dump(config, fp)
             f(literals)
 
         # perhaps ray.init() here? Also should ray.init(redirect_output=True) be used?
-        ray.init(redirect_output=True)
+        ray.init()
         remaining_ids = []
 
         for i in range(numTrials):
@@ -411,11 +426,11 @@ class Artifact:
             dir_path = tmpexperiment + '/' + str(i)
             # literals = list(map(lambda x: self.xp_state.literalNameToObj[x].v, lambdas[0][1]))
             f = lambdas[0][0]
-            remaining_ids.append(helperChangeDir.remote(dir_path, f, literals[i]))
+            remaining_ids.append(helperChangeDir.remote(dir_path, f, literals[i], config))
 
-        # _, _ = ray.wait(remaining_ids, num_returns=numTrials)
-        _ = ray.get(remaining_ids) #I tried using get to see if there's a difference
-
+        _, _ = ray.wait(remaining_ids, num_returns=numTrials)
+        # _ = ray.get(remaining_ids) #I tried using get to see if there's a difference
+        print("ray got")
         # Results directory initialization
 
         if not os.path.isdir(self.xp_state.versioningDirectory):
@@ -433,6 +448,7 @@ class Artifact:
             os.chdir(tmpexperiment)
 
             dirs = [x for x in os.listdir() if util.isNumber(x)]
+            dirs.sort()
             table_full = []
             table_small = []
 
@@ -449,6 +465,15 @@ class Artifact:
                     record_small[literalName] = config[literalName]
 
                 for artifactLabel in manifest:
+                    print(os.listdir())
+                    print()
+                    print(artifactLabel)
+                    print()
+                    print(manifest[artifactLabel])
+                    print()
+                    print(manifest[artifactLabel].loc)
+                    print("pausing")
+                    input()
                     record_full[artifactLabel] = util.loadArtifact(manifest[artifactLabel].loc)
                     if total_size(record_full[artifactLabel]) >= 1000:
                         record_small[artifactLabel] = " . . . "
