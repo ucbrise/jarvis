@@ -148,7 +148,7 @@ class Artifact:
         # Need to sort to compare
         self.loclist.sort()
         self.scriptNames.sort()
-
+     
     # def parallelPull(self, manifest={}):
     #
     #     self.xp_state.versioningDirectory = os.path.expanduser('~') + '/' + 'jarvis.d'
@@ -204,9 +204,13 @@ class Artifact:
     #         with open('.' + experimentName + '.jarvis', 'w') as fp:
     #             json.dump(config, fp)
     #         #This is necessary for the Pure Ray implementation.
+    #         print(lambdas)
     #         for f, names in lambdas:
+    #             print(names)
     #             literals = list(map(lambda x: config[x], names))
+    #             print(literals)
     #             f(literals)
+    #         input()
     #         reporter(timesteps_total=1)
     #         os.chdir(original_dir)
     #
@@ -385,6 +389,7 @@ class Artifact:
                 literalNames.append(kee)
 
         literals = list(itertools.product(*literals))
+        print(literals)
 
         for i in range(numTrials):
             dst = tmpexperiment + '/' + str(i)
@@ -410,13 +415,13 @@ class Artifact:
             print(i)
             # FIXME: Add check if number of combinations of literals == numTrials??
             dir_path = tmpexperiment + '/' + str(i)
-            literals = list(map(lambda x: self.xp_state.literalNameToObj[x].v, lambdas[0][1]))
+            # literals = list(map(lambda x: self.xp_state.literalNameToObj[x].v, lambdas[0][1]))
             f = lambdas[0][0]
+            print(literals)
+            remaining_ids.append(helperChangeDir.remote(dir_path, f, literals[i]))
 
-            remaining_ids.append(helperChangeDir.remote(dir_path, f, literals))
-
-        # _, _ = ray.wait(remaining_ids, num_returns=numTrials)
-        _ = ray.get(remaining_ids) #I tried using get to see if there's a difference
+        _, _ = ray.wait(remaining_ids, num_returns=numTrials)
+        # _ = ray.get(remaining_ids) #I tried using get to see if there's a difference
 
         # Results directory initialization
 
