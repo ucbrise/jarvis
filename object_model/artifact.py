@@ -428,8 +428,8 @@ class Artifact:
         ray.init()
         remaining_ids = []
 
-        print(config)
-        print(literals)
+        # print(config)
+        # print(literals)
 
         for i in range(numTrials):
             # FIXME: Add check if number of combinations of literals == numTrials??
@@ -445,7 +445,6 @@ class Artifact:
 
         _, _ = ray.wait(remaining_ids, num_returns=numTrials)
         # _ = ray.get(remaining_ids) #I tried using get to see if there's a difference
-        print("ray got")
         # Results directory initialization
 
         if not os.path.isdir(self.xp_state.versioningDirectory):
