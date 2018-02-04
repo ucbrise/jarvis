@@ -14,10 +14,6 @@ from shutil import rmtree
 from shutil import copytree
 from shutil import move
 
-from ray.tune import register_trainable
-from ray.tune import grid_search
-from ray.tune import run_experiments
-
 from .. import util
 from .recursivesizeof import total_size
 
@@ -227,7 +223,6 @@ class Artifact:
             with open('.' + experimentName + '.jarvis', 'w') as fp:
                 json.dump(config, fp)
 
-        ray.init()
         remaining_ids = []
 
 
