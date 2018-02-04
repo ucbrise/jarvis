@@ -143,7 +143,6 @@ class Artifact:
         self.scriptNames.sort()
 
     def parallelPull(self, manifest={}):
-
         self.xp_state.versioningDirectory = os.path.expanduser('~') + '/' + 'jarvis.d'
 
         tmpexperiment = self.xp_state.tmpexperiment
@@ -184,7 +183,6 @@ class Artifact:
 
         for kee in self.xp_state.literalNameToObj:
             if kee in literalsAttached:
-                print(kee)
                 config[kee] = self.xp_state.literalNameToObj[kee].v
                 if self.xp_state.literalNameToObj[kee].__oneByOne__:
                     numTrials *= len(self.xp_state.literalNameToObj[kee].v)
@@ -225,11 +223,9 @@ class Artifact:
 
         remaining_ids = []
 
-
         for i in range(numTrials):
             dir_path = tmpexperiment + '/' + str(i)
             remaining_ids.append(helperChangeDir.remote(dir_path, lambdas, literals[i], config))
-
 
         _, _ = ray.wait(remaining_ids, num_returns=numTrials)
 
@@ -407,4 +403,4 @@ class Artifact:
         # return self.xp_state.edges
 
     def getLocation(self):
-return self.loc
+        return self.loc
