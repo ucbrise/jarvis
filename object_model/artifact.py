@@ -149,8 +149,7 @@ class Artifact:
         self.loclist.sort()
         self.scriptNames.sort()
 
-    def parallelPul(self, manifest={}):
-
+    def parallelPull(self, manifest={}):
         self.xp_state.versioningDirectory = os.path.expanduser('~') + '/' + 'jarvis.d'
 
         # Runs one experiment per pull
@@ -293,15 +292,6 @@ class Artifact:
                     record_full[literalName] = config[literalName]
                     record_small[literalName] = config[literalName]
                 for artifactLabel in manifest:
-                    # print(os.listdir())
-                    # print()
-                    # print(artifactLabel)
-                    # print()
-                    # print(manifest[artifactLabel])
-                    # print()
-                    # print(manifest[artifactLabel].loc)
-                    # print("pausing")
-                    # input()
                     record_full[artifactLabel] = util.loadArtifact(manifest[artifactLabel].loc)
                     if total_size(record_full[artifactLabel]) >= 1000:
                         record_small[artifactLabel] = " . . . "
@@ -338,12 +328,10 @@ class Artifact:
         os.chdir(original_dir)
 
         if manifest:
-
             return pd.DataFrame(table_full)
 
     #new version of parallelPull
-    def parallelPull(self, manifest={}):
-
+    def parallelPul(self, manifest={}):
         self.xp_state.versioningDirectory = os.path.expanduser('~') + '/' + 'jarvis.d'
 
         tmpexperiment = self.xp_state.tmpexperiment
@@ -384,7 +372,6 @@ class Artifact:
 
         for kee in self.xp_state.literalNameToObj:
             if kee in literalsAttached:
-                print(kee)
                 config[kee] = self.xp_state.literalNameToObj[kee].v
                 if self.xp_state.literalNameToObj[kee].__oneByOne__:
                     numTrials *= len(self.xp_state.literalNameToObj[kee].v)
@@ -451,6 +438,7 @@ class Artifact:
 
         moveBackFlag = False
 
+        #errors out if there already exists an experiment
         if os.path.exists(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0]):
             move(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0] + '/.git', '/tmp/')
             rmtree(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0])
@@ -478,15 +466,6 @@ class Artifact:
                     record_small[literalName] = config[literalName]
 
                 for artifactLabel in manifest:
-                    # print(os.listdir())
-                    # print()
-                    # print(artifactLabel)
-                    # print()
-                    # print(manifest[artifactLabel])
-                    # print()
-                    # print(manifest[artifactLabel].loc)
-                    # print("pausing")
-                    # input()
                     record_full[artifactLabel] = util.loadArtifact(manifest[artifactLabel].loc)
                     if total_size(record_full[artifactLabel]) >= 1000:
                         record_small[artifactLabel] = " . . . "
