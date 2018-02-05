@@ -19,6 +19,7 @@ from ray.tune import grid_search
 from ray.tune import run_experiments
 
 from .. import util
+from .. import above_ground as ag
 from .recursivesizeof import total_size
 
 class Artifact:
@@ -120,6 +121,80 @@ class Artifact:
             repo.index.commit('.jarvis commit')
             os.chdir('../')
 
+    def __newCommit__(self):
+
+        # Reset visited for getLiteralsAttached graph traversal
+        self.xp_state.visited = []
+        experimentName = self.xp_state.EXPERIMENT_NAME
+        experimentDirectory = self.xp_state.versioningDirectory + '/' + experimentName
+
+        xpnv = ag.newExperimentVersion(self.xp_state)
+
+        # Num Trials  = Cross Prod Num Literals
+        # numTrials = 1
+        literalsAttachedNames = self.__getLiteralsAttached__()
+        # literals = []
+
+        # for kee in literalsAttachedNames:
+        #     if self.xp_state.literalNameToObj[kee].__oneByOne__:
+        #         numTrials *= len(self.xp_state.literalNameToObj[kee].v)
+        #         literals.append(self.xp_state.literalNameToObj[kee].v)
+        #     else:
+        #         if type(self.xp_state.literalNameToObj[kee].v) == tuple:
+        #             literals.append((self.xp_state.literalNameToObj[kee].v,))
+        #         else:
+        #             literals.append([self.xp_state.literalNameToObj[kee].v, ])
+        #
+        # literals = list(itertools.product(*literals))
+        # if literals == [()] then Graph has no Literals
+
+        original_dir  = os.getcwd()
+        os.chdir(experimentDirectory)
+        trialDirs = [x for x in os.listdir() if util.isNumber(x)]
+
+        # MISSING: WHAT IF MANY TRIALS SHARE THE SAME LITERAL or ARTIFACT
+
+        for trialDir in trialDirs:
+            os.chdir(str(trialDir))
+            with open('.' + experimentName + '.jarvis', 'r') as fp:
+                config = json.load(fp)
+            literals = {}
+            for name in literalsAttachedNames:
+                assert name in config
+                literals[name] = config[name]
+            trnv = ag.newTrialVersion(self.xp_state)
+            # ADD EDGE VERSION FROM xpnv TO trnv
+            for litName in literals:
+                ltnv = ag.newLiteralVersion(self.xp_state, litName, literals[litName])
+                # EDGE VERSION FROM trnv TO ltnv
+            for artifactName in self.loclist + self.scriptNames:
+                rtnv = ag.newArtifactVersion(self.xp_state, artifactName)
+                # EDGE VERSION FROM trnv TO rtnv
+
+
+            # OMIT LITERAL PICKLES FROM ARTIFACTS (... this should be handled already)
+
+            os.chdir('../')
+
+        os.chdir(original_dir)
+
+
+
+
+
+
+
+
+
+
+    def __getLiteralsAttached__(self):
+        literalsAttachedNames = []
+        if not self.parent:
+            return literalsAttachedNames
+        self.parent.__getLiteralsAttached__(literalsAttachedNames)
+        return literalsAttachedNames
+
+
     def __pull__(self):
         """
         Partially refactored
@@ -182,7 +257,8 @@ class Artifact:
 
         original_dir = os.getcwd()
 
-        experimentName = self.xp_state.jarvisFile.split('.')[0]
+        # experimentName = self.xp_state.jarvisFile.split('.')[0]
+        experimentName = self.xp_state.EXPERIMENT_NAME
         def exportedExec(config, reporter):
             tee = tuple([])
             for litName in config['8ilk9274']:
@@ -253,9 +329,9 @@ class Artifact:
 
         moveBackFlag = False
 
-        if os.path.exists(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0]):
-            move(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0] + '/.git', '/tmp/')
-            rmtree(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0])
+        if os.path.exists(self.xp_state.versioningDirectory + '/' + self.xp_state.EXPERIMENT_NAME):
+            move(self.xp_state.versioningDirectory + '/' + self.xp_state.EXPERIMENT_NAME + '/.git', '/tmp/')
+            rmtree(self.xp_state.versioningDirectory + '/' + self.xp_state.EXPERIMENT_NAME)
             moveBackFlag = True
 
         if manifest:
@@ -298,11 +374,11 @@ class Artifact:
 
             os.chdir(original_dir)
 
-        copytree(tmpexperiment, self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0])
+        copytree(tmpexperiment, self.xp_state.versioningDirectory + '/' + self.xp_state.EXPERIMENT_NAME)
 
-        os.chdir(self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0])
+        os.chdir(self.xp_state.versioningDirectory + '/' + self.xp_state.EXPERIMENT_NAME)
         if moveBackFlag:
-            move('/tmp/.git', self.xp_state.versioningDirectory + '/' + self.xp_state.jarvisFile.split('.')[0])
+            move('/tmp/.git', self.xp_state.versioningDirectory + '/' + self.xp_state.EXPERIMENT_NAME)
             repo = git.Repo(os.getcwd())
             repo.git.add(A=True)
             repo.index.commit('incremental commit')
@@ -327,7 +403,7 @@ class Artifact:
         try:
             while True:
                 self.__pull__()
-                self.__commit__()
+                # self.__commit__() COMMENTING OUT FOR GROUND REF PROTO
                 subtreeMaxed = util.master_pop(self.xp_state.literals)
                 if subtreeMaxed:
                     break
@@ -364,6 +440,8 @@ class Artifact:
         os.chdir('../')
         self.xp_state.literals = []
         self.xp_state.ghostFiles = set([])
+
+        # self.__newCommit__()
 
     def peek(self, func = lambda x: x):
         trueVersioningDir = self.xp_state.versioningDirectory

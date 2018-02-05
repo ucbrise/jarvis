@@ -47,6 +47,9 @@ try:
     edge('Experiment', 'Trial')
     edge('Trial', 'Literal')
     edge('Trial', 'Artifact')
+
+    # Ground application layer ready
+
 except:
     # No, Ground not initialized
     raise requests.exceptions.ConnectionError('Please start Ground first')
