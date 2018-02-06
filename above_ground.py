@@ -47,3 +47,17 @@ def newArtifactVersion(xp_state, artifactName):
                                                'type': 'string'
                                            }
                                        })
+
+def newExperimentTrialEdgeVersion(xp_state, fromNv, toNv):
+    return __newEdgeVersion__(xp_state, fromNv, toNv, 'jarvisExperimentjarvisTrial')
+
+def newTrialLiteralEdgeVersion(xp_state, fromNv, toNv):
+    return __newEdgeVersion__(xp_state, fromNv, toNv, 'jarvisTrialjarvisLiteral')
+
+def newTrialArtifactEdgeVersion(xp_state, fromNv, toNv):
+    return __newEdgeVersion__(xp_state, fromNv, toNv, 'jarvisTrialjarvisArtifact')
+
+def __newEdgeVersion__(xp_state, fromNv, toNv, edgeKey):
+    return xp_state.gc.createEdgeVersion(xp_state.gc.getEdge(edgeKey).get_id(),
+                                         fromNv.get_id(),
+                                         toNv.get_id())

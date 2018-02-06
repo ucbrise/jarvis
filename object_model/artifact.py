@@ -122,6 +122,7 @@ class Artifact:
             os.chdir('../')
 
     def __newCommit__(self):
+        # TEST THEN BEHAVIOR LAYER
 
         # Reset visited for getLiteralsAttached graph traversal
         self.xp_state.visited = []
@@ -129,6 +130,7 @@ class Artifact:
         experimentDirectory = self.xp_state.versioningDirectory + '/' + experimentName
 
         xpnv = ag.newExperimentVersion(self.xp_state)
+        assert xpnv is not None
 
         # Num Trials  = Cross Prod Num Literals
         # numTrials = 1
@@ -152,7 +154,7 @@ class Artifact:
         os.chdir(experimentDirectory)
         trialDirs = [x for x in os.listdir() if util.isNumber(x)]
 
-        # MISSING: WHAT IF MANY TRIALS SHARE THE SAME LITERAL or ARTIFACT
+        # WHAT IF MANY TRIALS SHARE THE SAME LITERAL or ARTIFACT
 
         for trialDir in trialDirs:
             os.chdir(str(trialDir))
@@ -163,13 +165,16 @@ class Artifact:
                 assert name in config
                 literals[name] = config[name]
             trnv = ag.newTrialVersion(self.xp_state)
-            # ADD EDGE VERSION FROM xpnv TO trnv
+            assert trnv is not None
+            ag.newExperimentTrialEdgeVersion(self.xp_state, xpnv, trnv)
             for litName in literals:
                 ltnv = ag.newLiteralVersion(self.xp_state, litName, literals[litName])
-                # EDGE VERSION FROM trnv TO ltnv
+                assert ltnv is not None
+                ag.newTrialLiteralEdgeVersion(self.xp_state, trnv, ltnv)
             for artifactName in self.loclist + self.scriptNames:
                 rtnv = ag.newArtifactVersion(self.xp_state, artifactName)
-                # EDGE VERSION FROM trnv TO rtnv
+                assert rtnv is not None
+                ag.newTrialArtifactEdgeVersion(self.xp_state, trnv, rtnv)
 
 
             # OMIT LITERAL PICKLES FROM ARTIFACTS (... this should be handled already)
@@ -177,15 +182,6 @@ class Artifact:
             os.chdir('../')
 
         os.chdir(original_dir)
-
-
-
-
-
-
-
-
-
 
     def __getLiteralsAttached__(self):
         literalsAttachedNames = []
