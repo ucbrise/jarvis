@@ -206,6 +206,7 @@ class Artifact:
         config['6zax7937'] = literals
         config['8ilk9274'] = literalNames
         
+        ray.init()
         @ray.remote
         def helperChangeDir(dir_path, lambdas, literals, config):
             os.chdir(dir_path)
