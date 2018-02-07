@@ -154,7 +154,7 @@ class Artifact:
         os.chdir(experimentDirectory)
         trialDirs = [x for x in os.listdir() if util.isNumber(x)]
 
-        # WHAT IF MANY TRIALS SHARE THE SAME LITERAL or ARTIFACT
+        #! WHAT IF MANY TRIALS SHARE THE SAME LITERAL or ARTIFACT
 
         for trialDir in trialDirs:
             os.chdir(str(trialDir))
@@ -177,7 +177,7 @@ class Artifact:
                 ag.newTrialArtifactEdgeVersion(self.xp_state, trnv, rtnv)
 
 
-            # OMIT LITERAL PICKLES FROM ARTIFACTS (... this should be handled already)
+            #! OMIT LITERAL PICKLES FROM ARTIFACTS
 
             os.chdir('../')
 
@@ -383,6 +383,8 @@ class Artifact:
             repo.git.add(A=True)
             repo.index.commit('initial commit')
         os.chdir(original_dir)
+
+        self.__newCommit__()
 
         if manifest:
 

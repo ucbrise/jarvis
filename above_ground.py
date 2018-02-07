@@ -1,5 +1,5 @@
 
-def newEperimentVersion(xp_state):
+def newExperimentVersion(xp_state):
     # -- caution with fixed values like 'jarvisExperiment', allowing for early Ground Ref prototype
 
     # The name of this experiment is in a tag in the nodeVersion of 'jarvisExperiment'
