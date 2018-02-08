@@ -21,6 +21,7 @@ from ray.tune import run_experiments
 from .. import util
 from .. import above_ground as ag
 from .recursivesizeof import total_size
+import time
 
 class Artifact:
 
@@ -122,7 +123,7 @@ class Artifact:
             os.chdir('../')
 
     def __newCommit__(self):
-        # TEST THEN BEHAVIOR LAYER
+        # BEHAVIOR LAYER NEXT
 
         # Reset visited for getLiteralsAttached graph traversal
         self.xp_state.visited = []
@@ -132,29 +133,11 @@ class Artifact:
         xpnv = ag.newExperimentVersion(self.xp_state)
         assert xpnv is not None
 
-        # Num Trials  = Cross Prod Num Literals
-        # numTrials = 1
         literalsAttachedNames = self.__getLiteralsAttached__()
-        # literals = []
-
-        # for kee in literalsAttachedNames:
-        #     if self.xp_state.literalNameToObj[kee].__oneByOne__:
-        #         numTrials *= len(self.xp_state.literalNameToObj[kee].v)
-        #         literals.append(self.xp_state.literalNameToObj[kee].v)
-        #     else:
-        #         if type(self.xp_state.literalNameToObj[kee].v) == tuple:
-        #             literals.append((self.xp_state.literalNameToObj[kee].v,))
-        #         else:
-        #             literals.append([self.xp_state.literalNameToObj[kee].v, ])
-        #
-        # literals = list(itertools.product(*literals))
-        # if literals == [()] then Graph has no Literals
 
         original_dir  = os.getcwd()
         os.chdir(experimentDirectory)
         trialDirs = [x for x in os.listdir() if util.isNumber(x)]
-
-        #! WHAT IF MANY TRIALS SHARE THE SAME LITERAL or ARTIFACT
 
         for trialDir in trialDirs:
             os.chdir(str(trialDir))
@@ -171,13 +154,13 @@ class Artifact:
                 ltnv = ag.newLiteralVersion(self.xp_state, litName, literals[litName])
                 assert ltnv is not None
                 ag.newTrialLiteralEdgeVersion(self.xp_state, trnv, ltnv)
-            for artifactName in self.loclist + self.scriptNames:
-                rtnv = ag.newArtifactVersion(self.xp_state, artifactName)
+            for artifactName in set(self.loclist + self.scriptNames) - self.xp_state.ghostFiles:
+                rtnv = ag.newArtifactVersion(self.xp_state, artifactName, util.md5(artifactName))
                 assert rtnv is not None
                 ag.newTrialArtifactEdgeVersion(self.xp_state, trnv, rtnv)
+            # We sleep to allow Ground server to complete all insertions before next iteration
+            time.sleep(5)
 
-
-            #! OMIT LITERAL PICKLES FROM ARTIFACTS
 
             os.chdir('../')
 
