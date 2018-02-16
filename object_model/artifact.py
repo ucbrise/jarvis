@@ -199,7 +199,7 @@ class Artifact:
         self.scriptNames.sort()
 
     def parallelPull(self, manifest={}):
-        self.xp_state.versioningDirectory = os.path.expanduser('~') + '/' + 'jarvis.d'
+        self.xp_state.versioningDirectory = os.path.expanduser('~') + '/' + '.jarvis.d'
 
         tmpexperiment = self.xp_state.tmpexperiment
         if os.path.exists(tmpexperiment):
