@@ -2,7 +2,7 @@ import jarvis
 
 ex = jarvis.Experiment('plate_demo')
 
-ex.groundClient('git')
+ex.groundClient('ground')
 
 ones = ex.literal([1, 2, 3], "ones")
 ones.forEach()
