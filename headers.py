@@ -156,17 +156,37 @@ def export(experimentName, outputDir, commitHash=None, experimentNewName=None, t
     #TODO: Check - Validity for outputDir 
     if experimentNewName is None:
         experimentNewName = experimentName
-
+    if trialNewName is None and trialNum is not None:
+        trialNewName = str(trialNum)
     
     #FIXME: This only support full experiment exports
+    #Trial invariant artifacts should be re-used rather than re-computed across trials.
     #TODO: Add functionality for single trial exports
     original_dir = os.getcwd()
-    os.chdir(State().versioningDirectory + '/' + experimentName)
+    try:
+        os.chdir(State().versioningDirectory + '/' + experimentName)
+    except:
+        print("Experiment not found. Please make sure you have run the experiment.")
+
     util.runProc('git checkout ' + commitHash)
     #TODO: Copy entire folder to outputDir
     #TODO: OR Run new experiment and have output into the jarvis.d subdir then copy over
+    #In the case above, we need to save the most recent commitHash so we can reset master
+    #code for copying:
+    import shutil
+    outputDir = os.path.abspath(outputDir + "/" + experimentNewName)
+    if trialNum is None:
+        os.chdir("..")
+        shutil.copytree(experimentName, outputDir)
+    else:
+        shutil.copytree(str(trialNum), outputDir + "/" + trialNewName)
+
+    # if no commit hash, use this block to run the code to copy files out then reset state of files
+    outputDir = os.path.abspath(outputDir)
+    shutil.copytree(experimentName, outputDir)
+    util.runProc('git reset --hard HEAD~1')
+
     util.runProc('git checkout master')
     os.chdir(original_dir)
 
     #TODO: util.runProc('python {}.py'.format(experimentName))
-
