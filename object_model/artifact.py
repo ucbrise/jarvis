@@ -296,23 +296,23 @@ class Artifact:
 
         if manifest:
             os.chdir(tmpexperiment)
-
+        
             dirs = [x for x in os.listdir() if util.isNumber(x)]
             dirs.sort()
             table_full = []
             table_small = []
-
+        
             for trial in dirs:
                 os.chdir(trial)
                 with open('.' + experimentName + '.jarvis', 'r') as fp:
                     config = json.load(fp)
                 record_full = {}
                 record_small = {}
-
+        
                 for literalName in literalNames:
                     record_full[literalName] = config[literalName]
                     record_small[literalName] = config[literalName]
-
+        
                 for artifactLabel in manifest:
                     record_full[artifactLabel] = util.loadArtifact(manifest[artifactLabel].loc)
                     if total_size(record_full[artifactLabel]) >= 1000:
@@ -325,14 +325,14 @@ class Artifact:
                         record_small[artifactLabel] = eval(record_small[artifactLabel])
                 record_small['__trialNum__'] = trial
                 record_full['__trialNum__'] = trial
-
+        
                 table_full.append(record_full)
                 table_small.append(record_small)
                 os.chdir('../')
-
+        
             df = pd.DataFrame(table_small)
             util.pickleTo(df, experimentName + '.pkl')
-
+        
             os.chdir(original_dir)
 
         #NEWCODE
@@ -341,18 +341,18 @@ class Artifact:
         # dirs.sort()
         # table_full = []
         # table_small = []
-        #
+
         # for trial in dirs:
         #     os.chdir(trial)
         #     with open('.' + experimentName + '.jarvis', 'r') as fp:
         #         config = json.load(fp)
         #     record_full = {}
         #     record_small = {}
-        #
+
         #     for literalName in literalNames:
         #         record_full[literalName] = config[literalName]
         #         record_small[literalName] = config[literalName]
-        #
+
         #     if manifest:
         #         for artifactLabel in manifest:
         #             record_full[artifactLabel] = util.loadArtifact(manifest[artifactLabel].loc)
@@ -366,13 +366,13 @@ class Artifact:
         #                 record_small[artifactLabel] = eval(record_small[artifactLabel])
         #     record_small['__trialNum__'] = trial
         #     record_full['__trialNum__'] = trial
-        #
+
         #     table_full.append(record_full)
         #     table_small.append(record_small)
         #     os.chdir('../')
         # df = pd.DataFrame(table_small)
         # util.pickleTo(df, experimentName + '.pkl')
-        #
+
         # os.chdir(original_dir)
 
         copytree(tmpexperiment, self.xp_state.versioningDirectory + '/' + self.xp_state.EXPERIMENT_NAME)
