@@ -131,3 +131,42 @@ def checkoutArtifact(experimentName, trialNum, commitHash, fileName):
     util.runProc('git checkout master')
     os.chdir(original_dir)
     return res
+
+"""
+Parameters: 
+
+experimentName : String 
+outputDir: ____________
+    Absolute or relative path to exported data location. 
+commitHash : _______________, optional
+    Defaults to the current version if None is provided. 
+experimentNewName : String, optional
+    Assigns a new name to the experiment. Defaults to experimentName if None is provided. 
+trialNum : Integer, optional
+    If provided, exports a single trial. Default is to export all of the trials. 
+trialName : String, optional
+    If provided and a trialNum is provided, assigns a new name to the trial. Defaults to previous trial name. 
+"""
+def export(experimentName, outputDir, commitHash=None, experimentNewName=None, trialNum=None, trialNewName=None):
+    #OTHER TODO: Modularize parallelPull so it has a parameter for export or nah? 
+    #TODO: Use checkoutArtifact to get relevant artifacts and then parallelPull them? 
+    assert isinstance(experimentName, str)
+    #TODO: Check - Validity for commitHash 
+    #TODO: Check - If not current commitHash, then do the checkout code below. else don't 
+    #TODO: Check - Validity for outputDir 
+    if experimentNewName is None:
+        experimentNewName = experimentName
+
+    
+    #FIXME: This only support full experiment exports
+    #TODO: Add functionality for single trial exports
+    original_dir = os.getcwd()
+    os.chdir(State().versioningDirectory + '/' + experimentName)
+    util.runProc('git checkout ' + commitHash)
+    #TODO: Copy entire folder to outputDir
+    #TODO: OR Run new experiment and have output into the jarvis.d subdir then copy over
+    util.runProc('git checkout master')
+    os.chdir(original_dir)
+
+    #TODO: util.runProc('python {}.py'.format(experimentName))
+
