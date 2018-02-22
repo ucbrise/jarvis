@@ -151,7 +151,7 @@ def export(experimentName, outputDir, commitHash=None, experimentNewName=None, t
     #OTHER TODO: Modularize parallelPull so it has a parameter for export or nah? 
     #TODO: Use checkoutArtifact to get relevant artifacts and then parallelPull them? 
     assert isinstance(experimentName, str)
-    #TODO: Check - Validity for commitHash 
+    #TODO: Check - Validity for commitHash - commitHash is a string
     #TODO: Check - If not current commitHash, then do the checkout code below. else don't 
     #TODO: Check - Validity for outputDir 
     if experimentNewName is None:
