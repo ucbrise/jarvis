@@ -147,7 +147,7 @@ trialNum : Integer, optional
 trialName : String, optional
     If provided and a trialNum is provided, assigns a new name to the trial. Defaults to previous trial name. 
 """
-def export(experimentName, outputDir, commitHash=None, experimentNewName=None, trialNum=None, trialNewName=None):
+def export(experimentName, outputDir, filename, commitHash=None, experimentNewName=None, trialNum=None, trialNewName=None):
     #OTHER TODO: Modularize parallelPull so it has a parameter for export or nah? 
     #TODO: Use checkoutArtifact to get relevant artifacts and then parallelPull them? 
     assert isinstance(experimentName, str)
@@ -163,30 +163,49 @@ def export(experimentName, outputDir, commitHash=None, experimentNewName=None, t
     #Trial invariant artifacts should be re-used rather than re-computed across trials.
     #TODO: Add functionality for single trial exports
     original_dir = os.getcwd()
-    try:
-        os.chdir(State().versioningDirectory + '/' + experimentName)
-    except:
-        print("Experiment not found. Please make sure you have run the experiment.")
+    # try:
+    print(State().versioningDirectory + '/' + experimentName)
+    os.chdir(State().versioningDirectory + '/' + experimentName)
+    # except:
+    #     print("Experiment not found. Please make sure you have run the experiment.")
+    #     input()
 
-    util.runProc('git checkout ' + commitHash)
+    # util.runProc('git checkout ' + commitHash)
+    #cleaning up if necessary
+    if trialNum is None:
+        print(os.getcwd())
+        os.chdir("0")
+    else:
+        util.runProc("rm *")
+        for each in os.listdir("."):
+            if each == ".git" or each == str(trialNum):
+                continue
+            else:
+                util.runProc("rm -rf " + each)
+        util.runProc("touch .lock")
+        os.chdir(str(trialNum))
+
+    #added filename temporarily because experimentName != python file name
+    util.runProc("python " + filename)
+
     #TODO: Copy entire folder to outputDir
     #TODO: OR Run new experiment and have output into the jarvis.d subdir then copy over
     #In the case above, we need to save the most recent commitHash so we can reset master
     #code for copying:
     import shutil
-    outputDir = os.path.abspath(outputDir + "/" + experimentNewName)
+    outputDir = os.path.abspath(outputDir)
+    #TODO: bug involving deleting existing directory
     if trialNum is None:
         os.chdir("..")
         shutil.copytree(experimentName, outputDir)
+        os.chdir(experimentName)
     else:
-        shutil.copytree(str(trialNum), outputDir + "/" + trialNewName)
+        shutil.copytree(str(trialNum), outputDir)
 
     # if no commit hash, use this block to run the code to copy files out then reset state of files
-    outputDir = os.path.abspath(outputDir)
-    shutil.copytree(experimentName, outputDir)
-    util.runProc('git reset --hard HEAD~1')
+    util.runProc('git reset --hard HEAD')
 
-    util.runProc('git checkout master')
-    os.chdir(original_dir)
+    # util.runProc('git checkout master')
+    # os.chdir(original_dir)
 
     #TODO: util.runProc('python {}.py'.format(experimentName))

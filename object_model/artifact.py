@@ -21,8 +21,6 @@ import time
 
 import ray
 
-import ray
-
 class Artifact:
 
     def __init__(self, loc, parent, manifest, xp_state):
@@ -199,7 +197,7 @@ class Artifact:
         self.scriptNames.sort()
 
     def parallelPull(self, manifest={}):
-        self.xp_state.versioningDirectory = os.path.expanduser('~') + '/' + '.jarvis.d'
+        self.xp_state.versioningDirectory = os.path.expanduser('~') + '/' + 'jarvis.d'
 
         tmpexperiment = self.xp_state.tmpexperiment
         if os.path.exists(tmpexperiment):
@@ -230,6 +228,17 @@ class Artifact:
             literalsAttached |= set(names)
 
         original_dir = os.getcwd()
+        #check to see if .lock exists
+        rerun = False
+        items = None
+        if os.path.exists(self.xp_state.versioningDirectory + '/' + self.xp_state.EXPERIMENT_NAME):
+            os.chdir(self.xp_state.versioningDirectory + '/' + self.xp_state.EXPERIMENT_NAME)
+            if os.path.isfile(".lock"):
+                rerun = True
+                items = os.listdir(".")
+            os.chdir(os.path.abspath(original_dir))
+        #end new part
+
         experimentName = self.xp_state.EXPERIMENT_NAME
         numTrials = 1
         literals = []
@@ -252,6 +261,8 @@ class Artifact:
         literals = list(itertools.product(*literals))
 
         for i in range(numTrials):
+            if items is not None and str(i) not in items:
+                continue
             dst = tmpexperiment + '/' + str(i)
             copytree(os.getcwd(), dst, True)  
 
@@ -279,9 +290,15 @@ class Artifact:
         remaining_ids = []
 
         for i in range(numTrials):
+            #if item not wanted, don't run it
+            if items != None and str(i) not in items:
+                continue
+            #end new part
             dir_path = tmpexperiment + '/' + str(i)
             remaining_ids.append(helperChangeDir.remote(dir_path, lambdas, literals[i], config))
 
+        if rerun:
+            numTrials = 1
         _, _ = ray.wait(remaining_ids, num_returns=numTrials)
 
         if not os.path.isdir(self.xp_state.versioningDirectory):
@@ -380,16 +397,20 @@ class Artifact:
         os.chdir(self.xp_state.versioningDirectory + '/' + self.xp_state.EXPERIMENT_NAME)
         if moveBackFlag:
             move('/tmp/.git', self.xp_state.versioningDirectory + '/' + self.xp_state.EXPERIMENT_NAME)
-            repo = git.Repo(os.getcwd())
-            repo.git.add(A=True)
-            repo.index.commit('incremental commit')
+            #stop here if rerun flag
+            if not rerun:
+                repo = git.Repo(os.getcwd())
+                repo.git.add(A=True)
+                repo.index.commit('incremental commit')
         else:
             repo = git.Repo.init(os.getcwd())
             repo.git.add(A=True)
             repo.index.commit('initial commit')
         os.chdir(original_dir)
 
-        self.__newCommit__()
+        #don't commit if rerun
+        if not rerun:
+            self.__newCommit__()
 
         if manifest:
             return pd.DataFrame(table_full)
