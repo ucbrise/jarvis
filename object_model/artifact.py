@@ -297,8 +297,10 @@ class Artifact:
             dir_path = tmpexperiment + '/' + str(i)
             remaining_ids.append(helperChangeDir.remote(dir_path, lambdas, literals[i], config))
 
+        #if rerunning and there is only one trial, then change numTrials to be 1
         if rerun:
             numTrials = 1
+        #ray.get does not work in this case
         _, _ = ray.wait(remaining_ids, num_returns=numTrials)
 
         if not os.path.isdir(self.xp_state.versioningDirectory):
@@ -352,7 +354,7 @@ class Artifact:
         
             os.chdir(original_dir)
 
-        #NEWCODE
+        #NEWCODE please check the new code
         # os.chdir(tmpexperiment)
         # dirs = [x for x in os.listdir() if util.isNumber(x)]
         # dirs.sort()

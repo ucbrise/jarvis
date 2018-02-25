@@ -148,7 +148,9 @@ trialName : String, optional
     If provided and a trialNum is provided, assigns a new name to the trial. Defaults to previous trial name. 
 """
 def export(experimentName, outputDir, filename, commitHash=None, experimentNewName=None, trialNum=None, trialNewName=None):
-    #OTHER TODO: Modularize parallelPull so it has a parameter for export or nah? 
+    #I added a filename because the experiment name is not always the same as the actual file we are running.
+    #This should be changed in the future
+    #OTHER TODO: Modularize parallelPull so it has a parameter for export or nah?
     #TODO: Use checkoutArtifact to get relevant artifacts and then parallelPull them? 
     assert isinstance(experimentName, str)
     #TODO: Check - Validity for commitHash - commitHash is a string
@@ -163,15 +165,16 @@ def export(experimentName, outputDir, filename, commitHash=None, experimentNewNa
     #Trial invariant artifacts should be re-used rather than re-computed across trials.
     #TODO: Add functionality for single trial exports
     original_dir = os.getcwd()
+
     # try:
-    print(State().versioningDirectory + '/' + experimentName)
+    # print(State().versioningDirectory + '/' + experimentName)
     os.chdir(State().versioningDirectory + '/' + experimentName)
     # except:
     #     print("Experiment not found. Please make sure you have run the experiment.")
     #     input()
 
     # util.runProc('git checkout ' + commitHash)
-    #cleaning up if necessary
+    #cleaning up the directory if necessary
     if trialNum is None:
         print(os.getcwd())
         os.chdir("0")
@@ -195,6 +198,9 @@ def export(experimentName, outputDir, filename, commitHash=None, experimentNewNa
     import shutil
     outputDir = os.path.abspath(outputDir)
     #TODO: bug involving deleting existing directory
+    #I believe the bug is here because the program reruns everything from jarvis.d
+    #when it is rerun, it overwrites everything from the experiment
+    #and the os can't find the original folder. Maybe try copying all relevant files out first?
     if trialNum is None:
         os.chdir("..")
         shutil.copytree(experimentName, outputDir)
