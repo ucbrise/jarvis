@@ -1,3 +1,141 @@
+#!/usr/bin/env python3
+
+from typing import Set, Union
+import hashlib
+import json
+import datetime
+
+import jarvis.util as util
+from jarvis.stateful import State
+from jarvis.object_model import Artifact, Action, Literal
+
+
+def commit(xp_state : State):
+
+    def safeCreateGetNode(sourceKey, name, tags=None):
+        # Work around small bug in ground client
+        try:
+            n = xp_state.gc.get_node(sourceKey)
+            if n is None:
+                n = xp_state.gc.create_node(sourceKey, name, tags)
+        except:
+            n = xp_state.gc.create_node(sourceKey, name, tags)
+
+        return n
+
+    def safeCreateGetEdge(sourceKey, name, fromNodeId, toNodeId, tags=None):
+        try:
+            n = xp_state.gc.get_edge(sourceKey)
+            if n is None:
+                n = xp_state.gc.create_edge(sourceKey, name, fromNodeId, toNodeId, tags)
+        except:
+            n = xp_state.gc.create_edge(sourceKey, name, fromNodeId, toNodeId, tags)
+
+        return n
+
+    def safeCreateGetNodeVersion(sourceKey):
+        # Good for singleton node versions
+        try:
+            n = xp_state.gc.get_node_latest_versions(sourceKey)
+            if n is None or n == []:
+                n = xp_state.gc.create_node_version(xp_state.gc.get_node(sourceKey).get_id())
+            else:
+                return xp_state.gc.get_node_version(n[0])
+        except:
+            n = xp_state.gc.create_node_version(xp_state.gc.get_node(sourceKey).get_id())
+
+        return n
+
+    def stringify(v):
+         # https://stackoverflow.com/a/22505259/9420936
+        return hashlib.md5(json.dumps(str(v) , sort_keys=True).encode('utf-8')).hexdigest()
+
+    # Begin
+
+    sourcekeySpec = 'jarvis.' + xp_state.EXPERIMENT_NAME
+    specnode = safeCreateGetNode(sourcekeySpec, "null")
+
+    latest_experiment_node_versions = xp_state.gc.get_node_latest_versions(sourcekeySpec)
+    if latest_experiment_node_versions == []:
+        latest_experiment_node_versions = None
+    assert latest_experiment_node_versions is None or len(latest_experiment_node_versions) == 1
+
+    # How does fork affect latest_experiment_node_versions
+
+    specnodev = xp_state.gc.create_node_version(specnode.get_id(), tags={
+        'timestamp':
+            {
+                'key' : 'timestamp',
+                'value' : datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'),
+                'type' : 'STRING'
+            }
+    }, parent_ids=latest_experiment_node_versions)
+
+    starts : Set[Union[Artifact, Literal]] = xp_state.eg.starts
+    for node in starts:
+        if type(node) == Literal:
+            sourcekeyLit = sourcekeySpec + '.literal.' + node.name
+            litnode = safeCreateGetNode(sourcekeyLit, "null")
+            e1 = safeCreateGetEdge(sourcekeyLit, "null", specnode.get_id(), litnode.get_id())
+
+            litnodev = xp_state.gc.create_node_version(litnode.get_id())
+            xp_state.gc.create_edge_version(e1.get_id(), specnodev.get_id(), litnodev.get_id())
+
+            if node.__oneByOne__:
+                for i, v in enumerate(node.v):
+                    sourcekeyBind = sourcekeyLit + '.' + stringify(v)
+                    bindnode = safeCreateGetNode(sourcekeyBind, "null", tags={
+                        'value':
+                            {
+                                'key': 'value',
+                                'value': str(v),
+                                'type' : 'STRING'
+                            }})
+                    e3 = safeCreateGetEdge(sourcekeyBind, "null", litnode.get_id(), bindnode.get_id())
+
+                    # Bindings are singleton node versions
+
+                    bindnodev = safeCreateGetNodeVersion(sourcekeyBind)
+                    xp_state.gc.create_edge_version(e3.get_id(), litnodev.get_id(), bindnodev.get_id())
+
+            else:
+                sourcekeyBind = sourcekeyLit + '.' + stringify(node.v)
+                bindnode = safeCreateGetNode(sourcekeyBind, "null", tags={
+                    'value':
+                        {
+                            'key': 'value',
+                            'value': str(node.v),
+                            'type': 'STRING'
+                        }})
+                e4 = safeCreateGetEdge(sourcekeyBind, "null", litnode.get_id(), bindnode.get_id())
+
+                # Bindings are singleton node versions
+
+                bindnodev = safeCreateGetNodeVersion(sourcekeyBind)
+                xp_state.gc.create_edge_version(e4.get_id(), litnodev.get_id(), bindnodev.get_id())
+
+        elif type(node) == Artifact:
+            sourcekeyArt = sourcekeySpec + '.artifact.' + stringify(node.loc)
+            artnode = safeCreateGetNode(sourcekeyArt, "null")
+            e2 = safeCreateGetEdge(sourcekeyArt, "null", specnode.get_id(), artnode.get_id())
+
+            # Artifact versioning will use git semantics
+
+            artnodev = xp_state.gc.create_node_version(artnode.get_id(), tags={
+                'checksum': {
+                    'key': 'checksum',
+                    'value': util.md5(node.loc),
+                    'type': 'STRING'
+                }
+            })
+            xp_state.gc.create_edge_version(e2.get_id(), specnodev.get_id(), artnodev.get_id())
+
+        else:
+            raise TypeError(
+                "Action cannot be in set: starts")
+
+
+
 def __tags_equal__(groundtag, mytag):
     groundtagprime = {}
     for kee in groundtag:
@@ -7,7 +145,7 @@ def __tags_equal__(groundtag, mytag):
                 groundtagprime[kee][kii] = groundtag[kee][kii]
     return groundtagprime == mytag
 
-def newExperimentVersion(xp_state):
+def newExperimentVersion(xp_state: State):
     # -- caution with fixed values like 'jarvisExperiment', allowing for early Ground Ref prototype
 
     # The name of this experiment is in a tag in the nodeVersion of 'jarvisExperiment'
@@ -25,7 +163,7 @@ def newExperimentVersion(xp_state):
                                            }},
                                        parentIds=latest_experiment_node_versions)
 
-def newTrialVersion(xp_state, literals, artifacts):
+def newTrialVersion(xp_state : State, literals, artifacts):
 
     my_tag = {}
     for i, kee in enumerate(literals):
@@ -54,7 +192,7 @@ def newTrialVersion(xp_state, literals, artifacts):
     return xp_state.gc.createNodeVersion(xp_state.gc.getNode('jarvisTrial').get_id(),
                                          tags=my_tag)
 
-def newLiteralVersion(xp_state, literalName, literalValue):
+def newLiteralVersion(xp_state : State , literalName, literalValue):
 
     my_tag = {     'literalName' : {
                          'key' : 'literalName',
@@ -78,7 +216,7 @@ def newLiteralVersion(xp_state, literalName, literalValue):
         return xp_state.gc.createNodeVersion(xp_state.gc.getNode('jarvisLiteral').get_id(),
                                          tags = my_tag)
 
-def newArtifactVersion(xp_state, artifactName):
+def newArtifactVersion(xp_state : State, artifactName):
     # Connect artifact versions to parents offline
     # What's important at this level is the tags
     # What artifact meta-data do we care about
@@ -101,7 +239,7 @@ def newArtifactVersion(xp_state, artifactName):
         return xp_state.gc.createNodeVersion(xp_state.gc.getNode('jarvisArtifact').get_id(),
                                        tags=my_tag)
 
-def newActionVersion(xp_state, actionName):
+def newActionVersion(xp_state : State, actionName):
     my_tag = {     'actionName' : {
                          'key' : 'actionName',
                          'value' : actionName,
@@ -112,25 +250,25 @@ def newActionVersion(xp_state, actionName):
                                          tags=my_tag)
 
 
-def newExperimentTrialEdgeVersion(xp_state, fromNv, toNv):
+def newExperimentTrialEdgeVersion(xp_state : State, fromNv, toNv):
     return __newEdgeVersion__(xp_state, fromNv, toNv, 'jarvisExperimentjarvisTrial')
 
-def newTrialLiteralEdgeVersion(xp_state, fromNv, toNv):
+def newTrialLiteralEdgeVersion(xp_state : State, fromNv, toNv):
     return __newEdgeVersion__(xp_state, fromNv, toNv, 'jarvisTrialjarvisLiteral')
 
-def newTrialArtifactEdgeVersion(xp_state, fromNv, toNv):
+def newTrialArtifactEdgeVersion(xp_state : State, fromNv, toNv):
     return __newEdgeVersion__(xp_state, fromNv, toNv, 'jarvisTrialjarvisArtifact')
 
-def newLiteralActionEdgeVersion(xp_state, fromNv, toNv):
+def newLiteralActionEdgeVersion(xp_state : State, fromNv, toNv):
     return __newEdgeVersion__(xp_state, fromNv, toNv, 'jarvisLiteraljarvisAction')
 
-def newArtifactActionEdgeVersion(xp_state, fromNv, toNv):
+def newArtifactActionEdgeVersion(xp_state : State, fromNv, toNv):
     return __newEdgeVersion__(xp_state, fromNv, toNv, 'jarvisArtifactjarvisAction')
 
-def newActionArtifactEdgeVersion(xp_state, fromNv, toNv):
+def newActionArtifactEdgeVersion(xp_state : State, fromNv, toNv):
     return __newEdgeVersion__(xp_state, fromNv, toNv, 'jarvisActionjarvisArtifact')
 
-def __newEdgeVersion__(xp_state, fromNv, toNv, edgeKey):
+def __newEdgeVersion__(xp_state : State, fromNv, toNv, edgeKey):
     return xp_state.gc.createEdgeVersion(xp_state.gc.getEdge(edgeKey).get_id(),
                                          fromNv.get_id(),
                                          toNv.get_id())
