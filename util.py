@@ -3,6 +3,8 @@
 import subprocess
 import pickle
 import hashlib
+import os
+from typing import List
 
 from .object_model import *
 
@@ -15,6 +17,9 @@ def isLoc(loc):
 
 def isJarvisClass(obj):
     return type(obj) == Artifact or type(obj) == Action or type(obj) == Literal
+
+def isLiteral(obj):
+    return type(obj) == Literal
 
 def isPickle(loc):
     try:
@@ -37,7 +42,10 @@ def isIterable(obj):
 def runProc(bashCommand):
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
-    return str(output, 'UTF-8')
+    try:
+        return str(output, 'UTF-8')
+    except:
+        return output
 
 def pickleTo(obj, loc):
     with open(loc, 'wb') as f:
@@ -97,3 +105,28 @@ def md5(fname):
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
+
+def plating(in_artifacts: List[Artifact]):
+    multiplier = []
+    for _in in in_artifacts:
+        if isLiteral(_in) and _in.__oneByOne__:
+            value = len(_in.v)
+            if value > 1:
+                multiplier.append(str(len(_in.v)))
+    plate_label = 'x'.join(multiplier)
+    if plate_label:
+        return plate_label
+    return None
+
+class chinto(object):
+    def __init__(self, target):
+        self.original_dir = os.getcwd()
+        self.target = target
+
+    def __enter__(self):
+        os.chdir(self.target)
+
+    def __exit__(self, type, value, traceback):
+        os.chdir(self.original_dir)
+
+
