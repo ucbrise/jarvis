@@ -164,15 +164,18 @@ def export(experimentName, outputDir, filename, commitHash=None, experimentNewNa
     #FIXME: This only support full experiment exports
     #Trial invariant artifacts should be re-used rather than re-computed across trials.
     #TODO: Add functionality for single trial exports
-    original_dir = os.getcwd()
+    #original_dir = os.getcwd()
+    original_dir = State().versioningDirectory
 
     # try:
     # print(State().versioningDirectory + '/' + experimentName)
-    os.chdir(State().versioningDirectory + '/' + experimentName)
+    os.chdir(State().versioningDirectory)
     # except:
     #     print("Experiment not found. Please make sure you have run the experiment.")
     #     input()
-
+    import shutil
+    shutil.copytree(experimentName, outputDir)
+    os.chdir(outputDir)
     # util.runProc('git checkout ' + commitHash)
     #cleaning up the directory if necessary
     if trialNum is None:
@@ -195,8 +198,8 @@ def export(experimentName, outputDir, filename, commitHash=None, experimentNewNa
     #TODO: OR Run new experiment and have output into the jarvis.d subdir then copy over
     #In the case above, we need to save the most recent commitHash so we can reset master
     #code for copying:
-    import shutil
     outputDir = os.path.abspath(outputDir)
+    os.chdir(original_dir)
     #TODO: bug involving deleting existing directory
     #I believe the bug is here because the program reruns everything from jarvis.d
     #when it is rerun, it overwrites everything from the experiment

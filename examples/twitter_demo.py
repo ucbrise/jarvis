@@ -12,7 +12,7 @@ split_seed = ex.literal(42, 'split_seed')
 
 from split import split
 do_split = ex.action(split, [tweets, frac, split_seed])
-training_tweets = ex.artifact('training_tweets.pkl', do_split)
+training_tweets = ex.artifact('training_tweets_real2.pkl', do_split)
 testing_tweets = ex.artifact('testing_tweets.pkl', do_split)
 
 alpha = ex.literal(np.linspace(0.0, 1.0, 8).tolist(), 'alpha')
